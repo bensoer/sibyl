@@ -3,6 +3,8 @@
 import logging
 from kubernetes import client, config
 
+from sibyl.models.events.k8_event import K8Event
+
 
 class LogFetcher():
 
@@ -24,15 +26,15 @@ class LogFetcher():
             self._logger.error("Exception Thrown Loading K8s In Cluster Configuration", exc_info=e)
             self._logger.error("Is External Secrets Reloader Running Inside Of A Kubernetes Cluster ?")
 
-    def _get_pod_details(self, event_data: dict) -> tuple[str, str, str]:
+    def _get_pod_details(self, event_data: K8Event) -> tuple[str, str, str]:
         """Helper to extract necessary details from the event_data."""
-        namespace = event_data['namespace']
-        pod_name = event_data['involved_object']["name"]
-        reason = event_data.get('reason', '')
+        namespace = event_data.namespace
+        pod_name = event_data.involved_object.name
+        reason = event_data.reason
         return namespace, pod_name, reason
     
 
-    def fetch_current_pod_logs_from_event(self, k8s_event: dict, tail_lines: int = 100) -> str:
+    def fetch_current_pod_logs_from_event(self, k8s_event: K8Event, tail_lines: int = 100) -> str:
 
 
         namespace, pod_name, _ = self._get_pod_details(k8s_event)
@@ -51,7 +53,7 @@ class LogFetcher():
             self._logger.error(f"Failed to fetch current logs for Pod: {pod_name} in Namespace: {namespace}", exc_info=e)
             raise e
 
-    def fetch_previous_pod_logs_from_event(self, k8s_event: dict, tail_lines: int = 100) -> str:
+    def fetch_previous_pod_logs_from_event(self, k8s_event: K8Event, tail_lines: int = 100) -> str:
 
         namespace, pod_name, _ = self._get_pod_details(k8s_event)
 
@@ -75,14 +77,14 @@ class LogFetcher():
             raise e
 
 
-    def fetch_pod_logs_from_event(self, k8s_event: dict, tail_lines: int = 100) -> str:
+    def fetch_pod_logs_from_event(self, k8s_event: K8Event, tail_lines: int = 100) -> str:
 
         namespace, pod_name, reason = self._get_pod_details(k8s_event)
         fetch_previous = reason in self.PREVIOUS_LOG_REASONS
 
         # If its specifically an Unhealthy event due to Liveness probe, we want previous logs
         # Otherwise Unhealthy does not likely mean the container has restarted yet
-        if reason == "Unhealthy" and "Liveness probe failed" in k8s_event["message"]:
+        if reason == "Unhealthy" and "Liveness probe failed" in k8s_event.message:
             fetch_previous = True
 
         try:

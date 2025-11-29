@@ -37,3 +37,7 @@ myvalues.yaml
 reports
 .coverage
 .xml
+
+
+myvalues.yaml
+.local
