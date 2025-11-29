@@ -26,8 +26,8 @@ class SlackNotifier(Notifiable):
             "rows": [
                 self._create_timestamp_table_headers(),
                 self._create_timestamp_table_row("Event Timestamp", event_data.timestamp),
-                self._create_timestamp_table_row("Creation Timestamp", event_data.metadata.creation_timestamp or "N/A"),
-                self._create_timestamp_table_row("Deletion Timestamp", event_data.metadata.deletion_timestamp or "N/A")
+                self._create_timestamp_table_row("Involved Object Creation Timestamp", event_data.metadata.creation_timestamp or "N/A"),
+                self._create_timestamp_table_row("Involved Object Deletion Timestamp", event_data.metadata.deletion_timestamp or "N/A")
             ]
         }
 
@@ -43,7 +43,7 @@ class SlackNotifier(Notifiable):
                                 "type": "text",
                                 "text": "Type",
                                 "style": {
-                                "bold": True
+                                    "bold": True
                                 }
                             }
                         ]
@@ -113,15 +113,59 @@ class SlackNotifier(Notifiable):
                     "type" : "section",
                     "text": {
                         "type":"mrkdwn",
-                        "text": f"**{event_data.type}:** {event_data.reason} {event_data.involved_object.kind} {event_data.involved_object.namespace}/{event_data.involved_object.name}"
+                        "text": f"*{event_data.type}:* {event_data.involved_object.kind} {event_data.reason}  {event_data.involved_object.namespace}/{event_data.involved_object.name}"
                     }
                 },
                 {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": f"_{event_data.message}_"
-                    }
+                    "type": "divider"
+                },
+                {
+                    "type": "rich_text",
+                    "elements": [
+                        {
+                            "type": "rich_text_section",
+                            "elements": [
+                                {
+                                    "type": "text",
+                                    "text": "Event Details",
+                                    "style": {
+                                        "bold": True
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "rich_text",
+                    "elements": [
+                        {
+                            "type": "rich_text_preformatted",
+                            "elements": [
+                                {
+                                    "type": "text",
+                                    "text": event_data.message
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "rich_text",
+                    "elements": [
+                        {
+                            "type": "rich_text_section",
+                            "elements": [
+                                {
+                                    "type": "text",
+                                    "text": "Timeline",
+                                    "style": {
+                                        "bold": True
+                                    }
+                                }
+                            ]
+                        }
+                    ]
                 },
                 self._create_timestamp_table(event_data),
             ]
