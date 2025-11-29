@@ -103,8 +103,6 @@ class SlackNotifier(Notifiable):
 
     def notify(self, event_data: K8Event, logs: Optional[str] = None) -> None:
         self._logger.info(f"Sending Slack notification for event: {event_data.name} in namespace: {event_data.namespace}")
-
-        color = "#f2c744" if event_data.type == "Warning" else "#3641a6"
         
         # Notify slack of the event
         postMessage_response = self.client.chat_postMessage(

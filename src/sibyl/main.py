@@ -160,6 +160,7 @@ def main() -> None:
             event: K8Event = event_queue.get(block=True, timeout=30)  # Wait for an event for up to 30 seconds
             logs: Optional[str] = None
 
+            # We only fetch logs if the events are from pods and from kubelet
             if "Pod" == event.involved_object.kind and "kubelet" == event.source.component:
                 logger.info(f"Processing event: {event}")
                 logs = log_fetcher.fetch_pod_logs_from_event(event, tail_lines=10)
