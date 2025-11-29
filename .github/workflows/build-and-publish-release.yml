@@ -1,0 +1,112 @@
+name: Release Build and Push Docker Image
+
+on:
+    release:
+            types: [released]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # important parameter
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Tools (yq)
+        # yq is required for Chart.yaml update
+        run: sudo snap install yq
+
+      - name: Update pyproject.toml Version
+        run: |
+          # 1. Strip the leading 'v' from the tag to get just the version number (e.g., v1.2.3 -> 1.2.3)
+          RELEASE_VERSION=$(echo ${{ github.event.release.tag_name }} | sed 's/^v//')
+          TOML_FILE="pyproject.toml"
+          
+          echo "Updating $TOML_FILE to version: $RELEASE_VERSION"
+          
+          # Use sed to find the version line (assuming it looks like 'version = "x.x.x"') 
+          # and replace the content inside the quotes.
+          # NOTE: Adjust the pattern 'version =' if your file uses a different key name (e.g., 'tool.poetry.version').
+          # This assumes the version is under [project] or a similar top-level key.
+          sed -i 's/^\(version = "\).*\("\)/\1'"$RELEASE_VERSION"'\2/' "$TOML_FILE"
+
+      - name: Update Helm Chart.yaml appVersion
+        run: |
+          RELEASE_TAG=${{ github.event.release.tag_name }}
+          CHART_PATH="charts/external-secrets-reloader/Chart.yaml"
+
+          echo "Updating $CHART_PATH appVersion to: $RELEASE_TAG"
+
+          # yq is used to reliably update the YAML structure.
+          yq -i ".appVersion = \"$RELEASE_TAG\"" "$CHART_PATH"
+
+      - name: Extract version from pyproject.toml
+        id: get_version
+        run: |
+          VERSION=$(grep '^version' pyproject.toml | head -n1 | cut -d '"' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Extract medata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4.3.0
+        with:
+            images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+            tags: |
+                type=schedule
+                type=semver,pattern={{version}}
+                type=semver,pattern={{major}}.{{minor}}
+                type=semver,pattern={{major}}
+                type=ref,event=branch
+                type=ref,event=pr
+                type=ref,event=tag
+                type=sha
+            labels: |
+                org.opencontainers.image.title=com.projectterris.external-secrets-reloader
+                org.opencontainers.image.description=External Secrets Reloader
+                org.opencontainers.image.vendor=project-terris
+                com.project-terris.external-secrets-reloader.image.pyprojectversion=${{ steps.get_version.outputs.version }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v4.0.0
+        id: push
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: "Setup Git Values"
+        run: |
+          git config --global user.email "ben@soernet.ca"
+          git config --global user.name "bensoer"
+
+      - name: Releasing Helm Chart
+        uses: helm/chart-releaser-action@v1.7.0
+        with:
+          # The branch to push the packaged charts and index.yaml to
+          pages_branch: gh-pages
+
+        env:
+          # GITHUB_TOKEN is automatically provided by GitHub Actions
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
