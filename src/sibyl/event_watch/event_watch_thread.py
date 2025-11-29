@@ -73,20 +73,19 @@ class EventWatchThread(Thread):
             "action": k8s_event.action,
             "type": k8s_event.type,
             "namespace": k8s_event.metadata.namespace,
+            "name" : k8s_event.metadata.name,
             "reason": k8s_event.reason,
             "message": k8s_event.message,
             "metadata": {
-                "cluster_name": k8s_event.metadata.cluster_name,
                 "name": k8s_event.metadata.name,
                 "namespace": k8s_event.metadata.namespace,
-                "creation_timestamp": k8s_event.metadata.creation_timestamp.isoformat() if k8s_event.metadata.creation_timestamp else "N/A",
-                "deletion_timestamp": k8s_event.metadata.deletion_timestamp.isoformat() if k8s_event.metadata.deletion_timestamp else "N/A",
-                "deletion_graece_period_seconds": k8s_event.metadata.deletion_grace_period_seconds,
+                "creation_timestamp": k8s_event.metadata.creationTimestamp.isoformat() if k8s_event.metadata.creationTimestamp else "N/A",
+                "deletion_timestamp": k8s_event.metadata.deletionTimestamp.isoformat() if k8s_event.metadata.deletionTimestamp else "N/A",
             },
             "involved_object": {
                 "kind": k8s_event.involved_object.kind,
                 "name": k8s_event.involved_object.name,
                 "namespace": k8s_event.involved_object.namespace,
             },
-            "timestamp": k8s_event.last_timestamp.isoformat() if k8s_event.last_timestamp else "N/A"
+            "timestamp": k8s_event.eventTime.isoformat() if k8s_event.eventTime else "N/A"
         }
