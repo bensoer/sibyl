@@ -9,6 +9,7 @@ from pythonjsonlogger import jsonlogger
 
 from sibyl.event_watch.event_watch_thread import EventWatchThread
 from sibyl.health_check.health_status_thread import HealthStatusThread
+from sibyl.log_fetcher import LogFetcher
 from sibyl.settings import Settings
 
 print("==== Starting Application ====")
@@ -121,16 +122,27 @@ def main() -> None:
     health_status.set_ready(False)  # Mark as not ready during initialization
     logger.debug("Health Check Endpoints Started")
 
-    logger.info("Starting Kubernetes Event Watcher Thread")
+    logger.info("Initializing Components")
     event_queue = Queue()
     event_watch_thread: Optional[EventWatchThread] = None
+    log_fetcher: Optional[LogFetcher] = None
 
+
+    logger.info("Starting Kubernetes Event Watcher Thread")
+    
     try:
         event_watch_thread = EventWatchThread(event_queue)
         event_watch_thread.start()
     except Exception as e:
         logger.error(f"Failed to start Kubernetes Event Watcher Thread")
         event_watch_thread = None
+        exit(1)
+
+    try:
+        log_fetcher = LogFetcher()
+    except Exception as e:
+        logger.error(f"Failed to initialize LogFetcher")
+        log_fetcher = None
         exit(1)
 
     logger.debug("Kubernetes Event Watcher Thread Started")
@@ -144,6 +156,9 @@ def main() -> None:
         # Main loop can process events from the event_queue here
         try:
             event = event_queue.get(block=True, timeout=1)  # Wait for an event for up to 1 second
+            logs = log_fetcher.fetch_pod_logs_from_event(event, tail_lines=10)
+            
+            logger.debug(f"Fetched logs for event: {logs.decode('utf-8')}")
             logger.info(f"Processing event: {event}")
             # Process the event here
         except Empty:
