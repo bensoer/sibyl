@@ -229,11 +229,11 @@ class SlackNotifier(Notifiable):
                 self._logger.error(f"Failed to upload logs for event {event_data.involved_object.namespace}/{event_data.involved_object.name} to Slack", exc_info=e)
                 return
 
+            self._logger.debug("Sending To Channel ID: " + str(channel_id))
             # Complete the upload process, posting the logs as a thread to the original message
             completeUploadExternal_response = self.client.files_completeUploadExternal(
                 upload_url=upload_url,
-                channel_id=channel_id,
-                channels=channel_id,
+                channels=str(channel_id),
                 #thread_ts=message_ts,
                 initial_comment="Attached logs for the Kubernetes event:",
                 files=[
