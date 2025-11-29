@@ -9,7 +9,7 @@ class LogFetcher():
     PREVIOUS_LOG_REASONS = [
         "BackOff",          # Container failed and is restarting
         #"Evicted",          # Pod was removed (logs may still exist from prior state)
-        "Unhealthy",        # Liveness/Readiness failed, often leading to restart/kill
+        #"Unhealthy",        # Liveness/Readiness failed, often leading to restart/kill
         "Failed"            # 'Failed' events often point directly to a container termination
     ]
 
@@ -79,6 +79,11 @@ class LogFetcher():
 
         namespace, pod_name, reason = self._get_pod_details(k8s_event)
         fetch_previous = reason in self.PREVIOUS_LOG_REASONS
+
+        # If its specifically an Unhealthy event due to Liveness probe, we want previous logs
+        # Otherwise Unhealthy does not likely mean the container has restarted yet
+        if reason == "Unhealthy" and "Liveness probe failed" in k8s_event["message"]:
+            fetch_previous = True
 
         try:
             if fetch_previous:
