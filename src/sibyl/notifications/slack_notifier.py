@@ -232,7 +232,7 @@ class SlackNotifier(Notifiable):
             # Complete the upload process, posting the logs as a thread to the original message
             completeUploadExternal_response = self.client.files_completeUploadExternal(
                 upload_url=upload_url,
-                channel_id=channel_id
+                channel_id=channel_id,
                 channels=channel_id,
                 #thread_ts=message_ts,
                 initial_comment="Attached logs for the Kubernetes event:",
