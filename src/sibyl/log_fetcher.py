@@ -82,13 +82,12 @@ class LogFetcher():
             return self.fetch_current_pod_logs_from_event(k8s_event, tail_lines)
         
         except client.ApiException as e:
-            self._logger.error(f"Failed to fetch {'Previous' if fetch_previous else 'Current'} logs for Pod: {pod_name} in Namespace: {namespace}", exc_info=e)
-
+            
             if e.status == 404:
                 self._logger.debug(f"Logs Not Found. Pod May Have Restarted or Been Evicted. Pod: {pod_name} in Namespace: {namespace}")
                 return f"Logs Not Found. Pod May Have Restarted or Been Evicted. {pod_name} in Namespace: {namespace}"
 
-            if e.status == 400 and fetch_previous:
+            elif e.status == 400 and fetch_previous:
                 self._logger.debug(f"Attempting To Fetch Current Logs Due To Previous Not Being Ready. Attempting to fetch current logs as fallback for Pod: {pod_name} in Namespace: {namespace}")
                 try:
                     return self.fetch_current_pod_logs_from_event(k8s_event, tail_lines)
@@ -96,6 +95,8 @@ class LogFetcher():
                     self._logger.error(f"Fetching Previous failed. And We've now failed to fetch current logs of pod: {pod_name} in namespace: {namespace}", exc_info=inner_e)
                     raise e from inner_e
 
+
+            self._logger.error(f"Failed to fetch {'Previous' if fetch_previous else 'Current'} logs for Pod: {pod_name} in Namespace: {namespace}", exc_info=e)
             # if the above IF doesn't get anywhere then we throw our original exception
             raise e
             

@@ -157,12 +157,11 @@ def main() -> None:
         try:
             event = event_queue.get(block=True, timeout=30)  # Wait for an event for up to 30 seconds
             if "Pod" in event["involved_object"]["kind"]:
-                logs = log_fetcher.fetch_pod_logs_from_event(event, tail_lines=10)
-
-                logger.debug(f"Fetched logs for event: {logs}")
                 logger.info(f"Processing event: {event}")
-
-            logger.debug(f"Event type is not from a Pod, skipping log fetch. Event Type: {event['involved_object']['kind']}")
+                logs = log_fetcher.fetch_pod_logs_from_event(event, tail_lines=10)
+                logger.debug(f"Fetched logs for event: {logs}")
+            else:
+                logger.debug(f"Event type is not from a Pod, skipping log fetch. Event Type: {event['involved_object']['kind']}")
         except Empty:
             # Timeout occurred, no event received, continue the loop
             continue
