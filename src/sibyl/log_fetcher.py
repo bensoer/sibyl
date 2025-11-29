@@ -43,7 +43,6 @@ class LogFetcher():
                 namespace=namespace,
                 tail_lines=tail_lines,
                 previous=False,
-                _preload_content=False
             )
             self._logger.debug(f"Fetched current logs for Pod: {pod_name} in Namespace: {namespace}")
             return log_response
@@ -62,7 +61,6 @@ class LogFetcher():
                 namespace=namespace,
                 tail_lines=tail_lines,
                 previous=True,
-                _preload_content=False
             )
             self._logger.debug(f"Fetched previous logs for Pod: {pod_name} in Namespace: {namespace}")
             return log_response
@@ -82,31 +80,23 @@ class LogFetcher():
         namespace, pod_name, reason = self._get_pod_details(k8s_event)
         fetch_previous = reason in self.PREVIOUS_LOG_REASONS
 
-        # try:
-            #if fetch_previous:
-            #    return self.fetch_previous_pod_logs_from_event(k8s_event, tail_lines)
-            #return self.fetch_current_pod_logs_from_event(k8s_event, tail_lines)
+        try:
+            if fetch_previous:
+               return self.fetch_previous_pod_logs_from_event(k8s_event, tail_lines)
+            return self.fetch_current_pod_logs_from_event(k8s_event, tail_lines)
         
-        previous_logs = self.fetch_previous_pod_logs_from_event(k8s_event, tail_lines)
-        current_logs = self.fetch_current_pod_logs_from_event(k8s_event, tail_lines)
-
-        if len(previous_logs.strip()) == 0 and len(current_logs.strip()) == 0:
-            return "No logs found for either current or previous container instances."
-        
-        return f"--- Previous Logs ---\n{previous_logs}\n\n--- Current Logs ---\n{current_logs}"
-
-        # except client.ApiException as e:
+        except client.ApiException as e:
             
-        #     if e.status == 400 and fetch_previous:
-        #         self._logger.debug(f"Attempting To Fetch Current Logs Due To Previous Not Being Ready. Attempting to fetch current logs as fallback for Pod: {pod_name} in Namespace: {namespace}")
-        #         try:
-        #             return self.fetch_current_pod_logs_from_event(k8s_event, tail_lines)
-        #         except client.ApiException as inner_e:
-        #             self._logger.error(f"Fetching Previous failed. And We've now failed to fetch current logs of pod: {pod_name} in namespace: {namespace}", exc_info=inner_e)
-        #             raise e from inner_e
+            if e.status == 400 and fetch_previous:
+                self._logger.debug(f"Attempting To Fetch Current Logs Due To Previous Not Being Ready. Attempting to fetch current logs as fallback for Pod: {pod_name} in Namespace: {namespace}")
+                try:
+                    return self.fetch_current_pod_logs_from_event(k8s_event, tail_lines)
+                except client.ApiException as inner_e:
+                    self._logger.error(f"Fetching Previous failed. And We've now failed to fetch current logs of pod: {pod_name} in namespace: {namespace}", exc_info=inner_e)
+                    raise e from inner_e
 
 
-        #     self._logger.error(f"Failed to fetch {'Previous' if fetch_previous else 'Current'} logs for Pod: {pod_name} in Namespace: {namespace}", exc_info=e)
-        #     # if the above IF doesn't get anywhere then we throw our original exception
-        #     raise e
+            self._logger.error(f"Failed to fetch {'Previous' if fetch_previous else 'Current'} logs for Pod: {pod_name} in Namespace: {namespace}", exc_info=e)
+            # if the above IF doesn't get anywhere then we throw our original exception
+            raise e
             
