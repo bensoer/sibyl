@@ -71,7 +71,10 @@ class EventWatchThread(Thread):
 
         return {
             "kind": k8s_event.kind,
-            "source": k8s_event.source,
+            "source": {
+                "component": k8s_event.source.component,
+                "host": k8s_event.source.host,
+            },
             "action": k8s_event.action,
             "type": k8s_event.type,
             "namespace": k8s_event.metadata.namespace,
