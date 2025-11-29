@@ -8,7 +8,7 @@ class LogFetcher():
 
     PREVIOUS_LOG_REASONS = [
         "BackOff",          # Container failed and is restarting
-        "Evicted",          # Pod was removed (logs may still exist from prior state)
+        #"Evicted",          # Pod was removed (logs may still exist from prior state)
         "Unhealthy",        # Liveness/Readiness failed, often leading to restart/kill
         "Failed"            # 'Failed' events often point directly to a container termination
     ]
@@ -83,6 +83,10 @@ class LogFetcher():
         
         except client.ApiException as e:
             self._logger.error(f"Failed to fetch {'Previous' if fetch_previous else 'Current'} logs for Pod: {pod_name} in Namespace: {namespace}", exc_info=e)
+
+            if e.status == 404:
+                self._logger.debug(f"Logs Not Found. Pod May Have Restarted or Been Evicted. Pod: {pod_name} in Namespace: {namespace}")
+                return f"Logs Not Found. Pod May Have Restarted or Been Evicted. {pod_name} in Namespace: {namespace}"
 
             if e.status == 400 and fetch_previous:
                 self._logger.debug(f"Attempting To Fetch Current Logs Due To Previous Not Being Ready. Attempting to fetch current logs as fallback for Pod: {pod_name} in Namespace: {namespace}")
