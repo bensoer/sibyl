@@ -1,7 +1,7 @@
 
 
 import logging
-from queue import Queue
+from queue import Queue, Empty
 import signal
 from sys import exit, stdout
 from typing import Optional
@@ -146,7 +146,7 @@ def main() -> None:
             event = event_queue.get(block=True, timeout=1)  # Wait for an event for up to 1 second
             logger.info(f"Processing event: {event}")
             # Process the event here
-        except Queue.Empty:
+        except Empty:
             # Timeout occurred, no event received, continue the loop
             continue
         except Exception as e:
