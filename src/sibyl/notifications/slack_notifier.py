@@ -195,8 +195,7 @@ class SlackNotifier(Notifiable):
             getUploadURLExternal_response = self.client.files_getUploadURLExternal(
                 filename=f"logs_{event_data.involved_object.kind}_{event_data.involved_object.namespace}_{event_data.involved_object.name}.txt",
                 length=len(logs),
-                snippet_type="text",
-                alt_txt=f"Log File For K8s Event Involving {event_data.involved_object.namespace}/{event_data.involved_object.name}"
+                snippet_type="text"
             )
 
             # Check allocation was successful
