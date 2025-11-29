@@ -182,6 +182,7 @@ class SlackNotifier(Notifiable):
         # IF we have logs, then upload them and include them in a thread of the post
         if logs:
             message_ts = postMessage_response.get('ts')
+            channel_id = postMessage_response.get('channel')
 
             # Allocate upload space on Slack
             getUploadURLExternal_response = self.client.files_getUploadURLExternal(
@@ -224,7 +225,7 @@ class SlackNotifier(Notifiable):
             # Complete the upload process, posting the logs as a thread to the original message
             completeUploadExternal_response = self.client.files_completeUploadExternal(
                 upload_url=upload_url,
-                channel_id=self.channel,
+                channel_id=channel_id,
                 thread_ts=message_ts,
                 initial_comment="Attached logs for the Kubernetes event:",
                 files=[
