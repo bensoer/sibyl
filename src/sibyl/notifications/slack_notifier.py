@@ -234,7 +234,7 @@ class SlackNotifier(Notifiable):
                 upload_url=upload_url,
                 channel_id=str(channel_id),
                 channels=[str(channel_id)],
-                #thread_ts=message_ts,
+                thread_ts=message_ts,
                 initial_comment="Attached logs for the Kubernetes event:",
                 files=[
                     {
