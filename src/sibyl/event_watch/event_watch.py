@@ -1,12 +1,13 @@
 from typing import Callable, Optional
 import logging
 from kubernetes import client, watch
-from kubernetes.client import CoreV1Event
+from kubernetes.client import CoreV1Event, CoreV1Api
 
 class EventWatch():
 
-    def __init__(self, timeout_seconds: Optional[int] = 300):
+    def __init__(self, core_v1_client: CoreV1Api, timeout_seconds: Optional[int] = 300):
         self._logger = logging.getLogger(self.__class__.__name__)
+        self.core_v1_client = core_v1_client
         self.timeout_seconds = timeout_seconds
 
     def poll_for_event(self, callback: Callable[[CoreV1Event], None]) -> None:
