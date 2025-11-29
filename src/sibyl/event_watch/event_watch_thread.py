@@ -46,6 +46,8 @@ class EventWatchThread(Thread):
             if k8s_event.type in self.ERROR_TYPES:
                 self._logger.debug(f"Detected K8s Event: {k8s_event.reason} - {k8s_event.message}")
                 self.event_queue.put(self._format_event(k8s_event))
+            else:
+                self._logger.debug(f"Ignoring Non-Error K8s Event: {k8s_event.reason} - {k8s_event.message}")
 
         event_watch = EventWatch(self.core_v1_client, timeout_seconds=300)
         while not self._stop_event.is_set():
