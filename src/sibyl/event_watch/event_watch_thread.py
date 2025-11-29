@@ -79,13 +79,13 @@ class EventWatchThread(Thread):
             "metadata": {
                 "name": k8s_event.metadata.name,
                 "namespace": k8s_event.metadata.namespace,
-                "creation_timestamp": k8s_event.metadata.creationTimestamp.isoformat() if k8s_event.metadata.creationTimestamp else "N/A",
-                "deletion_timestamp": k8s_event.metadata.deletionTimestamp.isoformat() if k8s_event.metadata.deletionTimestamp else "N/A",
+                "creation_timestamp": k8s_event.metadata.creation_timestamp.isoformat() if k8s_event.metadata.creation_timestamp else "N/A",
+                "deletion_timestamp": k8s_event.metadata.deletion_timestamp.isoformat() if k8s_event.metadata.deletion_timestamp else "N/A",
             },
             "involved_object": {
                 "kind": k8s_event.involved_object.kind,
                 "name": k8s_event.involved_object.name,
                 "namespace": k8s_event.involved_object.namespace,
             },
-            "timestamp": k8s_event.eventTime.isoformat() if k8s_event.eventTime else "N/A"
+            "timestamp": k8s_event.last_timestamp.isoformat() if k8s_event.last_timestamp else "N/A"
         }
