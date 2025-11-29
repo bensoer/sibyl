@@ -159,7 +159,7 @@ def main() -> None:
             if "Pod" in event["involved_object"]["kind"]:
                 logs = log_fetcher.fetch_pod_logs_from_event(event, tail_lines=10)
 
-                logger.debug(f"Fetched logs for event: {logs.decode('utf-8')}")
+                logger.debug(f"Fetched logs for event: {logs}")
                 logger.info(f"Processing event: {event}")
 
             logger.debug(f"Event type is not from a Pod, skipping log fetch. Event Type: {event['involved_object']['kind']}")
