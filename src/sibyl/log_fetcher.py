@@ -27,7 +27,7 @@ class LogFetcher():
     def _get_pod_details(self, event_data: dict) -> tuple[str, str, str]:
         """Helper to extract necessary details from the event_data."""
         namespace = event_data['namespace']
-        pod_name = event_data['involved_object'].split('/')[1]
+        pod_name = event_data['involved_object']["name"]
         reason = event_data.get('reason', '')
         return namespace, pod_name, reason
     
