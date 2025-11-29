@@ -146,6 +146,9 @@ def main() -> None:
             event = event_queue.get(block=True, timeout=1)  # Wait for an event for up to 1 second
             logger.info(f"Processing event: {event}")
             # Process the event here
+        except Queue.Empty:
+            # Timeout occurred, no event received, continue the loop
+            continue
         except Exception as e:
             logger.error(f"Error processing event: {e}", exc_info=e)
             # Timeout occurred, no event received, continue the loop
