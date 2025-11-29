@@ -32,9 +32,7 @@ logging_levels = {
     'INFO': logging.INFO,
     'DEBUG': logging.DEBUG,
 }
-#logging_level_int = logging_levels.get(settings.LOG_LEVEL, logging.INFO)
-logging_level_int = logging.DEBUG
-
+logging_level_int = logging_levels.get(settings.LOG_LEVEL, logging.INFO)
 rootLogger = logging.getLogger()
 rootLogger.setLevel(logging_level_int)
 
@@ -62,7 +60,7 @@ rootLogger.addHandler(handler)
 # Suppress verbose logging from third-party libraries
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("werkzeug").setLevel(logging.WARNING if logging_level_int != logging.DEBUG else logging.INFO)
-
+logging.getLogger("slack_sdk.web.base_client").setLevel(logging.WARNING if logging_level_int != logging.DEBUG else logging.INFO)
 # This is our logger for this main bootstrapping code here. Classes all log using a class logger
 # that inherits configuration from the rootLogger
 logger = logging.getLogger("sibyl")

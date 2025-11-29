@@ -115,7 +115,7 @@ class SlackNotifier(Notifiable):
                     "type" : "section",
                     "text": {
                         "type":"mrkdwn",
-                        "text": f"*{event_data.type}:* {event_data.involved_object.kind} {event_data.involved_object.namespace}/{event_data.involved_object.name} -> {event_data.reason} "
+                        "text": f"*{event_data.type}:* {event_data.involved_object.kind} `{event_data.involved_object.namespace}/{event_data.involved_object.name}` -> {event_data.reason} "
                     }
                 },
                 
@@ -124,15 +124,15 @@ class SlackNotifier(Notifiable):
                     "fields": [
                         {
                             "type": "mrkdwn",
-                            "text": f"*Involved Object:*\n{event_data.involved_object.name}"
-                        },
-                        {
-                            "type": "mrkdwn",
                             "text": f"*Namespace:*\n{event_data.involved_object.namespace}"
                         },
                         {
                             "type": "mrkdwn",
-                            "text": f"*Kind:*\n{event_data.involved_object.kind}"
+                            "text": f"*Involved Object:*\n{event_data.kind} / {event_data.involved_object.name}"
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": f"*Alert Type:*\n{event_data.type}"
                         },
                         {
                             "type": "mrkdwn",
@@ -235,7 +235,7 @@ class SlackNotifier(Notifiable):
                 channel_id=str(channel_id),
                 channels=[str(channel_id)],
                 thread_ts=message_ts,
-                initial_comment="Attached logs for the Kubernetes event:",
+                initial_comment=f"Pod Logs For {event_data.involved_object.namespace}/{event_data.involved_object.name}",
                 files=[
                     {
                         "id": file_id,
