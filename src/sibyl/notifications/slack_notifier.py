@@ -103,6 +103,8 @@ class SlackNotifier(Notifiable):
 
     def notify(self, event_data: K8Event, logs: Optional[str] = None) -> None:
         self._logger.info(f"Sending Slack notification for event: {event_data.name} in namespace: {event_data.namespace}")
+
+        color = "#f2c744" if event_data.type == "Warning" else "#3641a6"
         
         # Notify slack of the event
         postMessage_response = self.client.chat_postMessage(
@@ -113,28 +115,33 @@ class SlackNotifier(Notifiable):
                     "type" : "section",
                     "text": {
                         "type":"mrkdwn",
-                        "text": f"*{event_data.type}:* {event_data.involved_object.kind} {event_data.reason}  {event_data.involved_object.namespace}/{event_data.involved_object.name}"
+                        "text": f"*{event_data.type}:* {event_data.involved_object.kind} {event_data.involved_object.namespace}/{event_data.involved_object.name} -> {event_data.reason} "
                     }
+                },
+                
+                {
+                    "type": "section",
+                    "fields": [
+                        {
+                            "type": "mrkdwn",
+                            "text": f"*Involved Object:*\n{event_data.involved_object.name}"
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": f"*Namespace:*\n{event_data.involved_object.namespace}"
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": f"*Kind:*\n{event_data.involved_object.kind}"
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": f"*Reason:*\n{event_data.reason}"
+                        }
+                    ]
                 },
                 {
                     "type": "divider"
-                },
-                {
-                    "type": "rich_text",
-                    "elements": [
-                        {
-                            "type": "rich_text_section",
-                            "elements": [
-                                {
-                                    "type": "text",
-                                    "text": "Event Details",
-                                    "style": {
-                                        "bold": True
-                                    }
-                                }
-                            ]
-                        }
-                    ]
                 },
                 {
                     "type": "rich_text",
@@ -150,23 +157,23 @@ class SlackNotifier(Notifiable):
                         }
                     ]
                 },
-                {
-                    "type": "rich_text",
-                    "elements": [
-                        {
-                            "type": "rich_text_section",
-                            "elements": [
-                                {
-                                    "type": "text",
-                                    "text": "Timeline",
-                                    "style": {
-                                        "bold": True
-                                    }
-                                }
-                            ]
-                        }
-                    ]
-                },
+                # {
+                #     "type": "rich_text",
+                #     "elements": [
+                #         {
+                #             "type": "rich_text_section",
+                #             "elements": [
+                #                 {
+                #                     "type": "text",
+                #                     "text": "Timeline",
+                #                     "style": {
+                #                         "bold": True
+                #                     }
+                #                 }
+                #             ]
+                #         }
+                #     ]
+                # },
                 self._create_timestamp_table(event_data),
             ]
         )
