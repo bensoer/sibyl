@@ -10,6 +10,8 @@ from pythonjsonlogger import jsonlogger
 from sibyl.event_watch.event_watch_thread import EventWatchThread
 from sibyl.health_check.health_status_thread import HealthStatusThread
 from sibyl.log_fetcher import LogFetcher
+from sibyl.models.events.k8_event import K8Event
+from sibyl.notifications.slack_notifier import SlackNotifier
 from sibyl.settings import Settings
 
 print("==== Starting Application ====")
@@ -145,6 +147,8 @@ def main() -> None:
         log_fetcher = None
         exit(1)
 
+    slack_notifier = SlackNotifier(bot_token=settings.SLACK_BOT_TOKEN, channel=settings.SLACK_CHANNEL)
+
     logger.debug("Kubernetes Event Watcher Thread Started")
 
 
@@ -155,13 +159,17 @@ def main() -> None:
     while CONTINUE_PROCESSING:
         # Main loop can process events from the event_queue here
         try:
-            event = event_queue.get(block=True, timeout=30)  # Wait for an event for up to 30 seconds
-            if "Pod" == event["involved_object"]["kind"] and "kubelet" == event["source"]["component"]:
+            event: K8Event = event_queue.get(block=True, timeout=30)  # Wait for an event for up to 30 seconds
+            logs: Optional[str] = None
+
+            if "Pod" == event.involved_object.kind and "kubelet" == event.source.component:
                 logger.info(f"Processing event: {event}")
                 logs = log_fetcher.fetch_pod_logs_from_event(event, tail_lines=10)
                 logger.debug(f"Fetched logs for event: {logs}")
             else:
-                logger.debug(f"Event type is not from a Pod, skipping log fetch. Event Type: {event['involved_object']['kind']}. Component: {event['source']['component']}")
+                logger.debug(f"Event type is not from a Pod, skipping log fetch. Event Type: {event.involved_object.kind}. Component: {event.source.component}")
+
+            slack_notifier.notify(event, logs=logs)
         except Empty:
             # Timeout occurred, no event received, continue the loop
             continue
