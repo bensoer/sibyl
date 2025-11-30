@@ -145,7 +145,7 @@ def main() -> None:
         log_fetcher = None
         exit(1)
 
-    slack_notifier = SlackNotifier(bot_token=settings.SLACK_BOT_TOKEN, channel=settings.SLACK_CHANNEL)
+    slack_notifier = SlackNotifier(bot_token=settings.SLACK_BOT_TOKEN, channel=settings.SLACK_CHANNEL, cluster_name=settings.CLUSTER_NAME)
 
     logger.debug("Kubernetes Event Watcher Thread Started")
 
