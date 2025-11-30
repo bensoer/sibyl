@@ -133,9 +133,10 @@ class SlackNotifier(Notifiable):
     def notify(self, event_data: K8Event, logs: Optional[str] = None) -> None:
         self._logger.info(f"Sending Slack notification for event: {event_data.name} in namespace: {event_data.namespace}")
 
-        header_title = f"*{event_data.type}:*"
+        header_title = f"{event_data.type}:"
         if self.cluster_name:
-            header_title = f"*[{self.cluster_name}]*" + header_title 
+            header_title = f"[{self.cluster_name}] "+ header_title 
+        bold_header_title = f"*{header_title}*"
         
         # Notify slack of the event
         postMessage_response = self.client.chat_postMessage(
@@ -146,7 +147,7 @@ class SlackNotifier(Notifiable):
                     "type" : "section",
                     "text": {
                         "type":"mrkdwn",
-                        "text": f"{header_title} {event_data.involved_object.kind} `{event_data.involved_object.namespace}/{event_data.involved_object.name}` -> {event_data.reason} "
+                        "text": f"{bold_header_title} {event_data.involved_object.kind} `{event_data.involved_object.namespace}/{event_data.involved_object.name}` -> {event_data.reason} "
                     }
                 },
                 
