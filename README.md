@@ -84,6 +84,11 @@ To modify the other settings you will need to do the following:
     ```
 
 
+# Future Features
+- Multi-cluster support
+    - Include the cluster name in the alerts so that multiple sibyls can use the same slack app
+- Remove headers from the table ? Kinda useless extra information, the rows give enough context
+
 
 # Developer Notes
 Install development onto minikube by running:

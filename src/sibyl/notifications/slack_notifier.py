@@ -15,10 +15,11 @@ from sibyl.notifications.notifiable import Notifiable
 
 class SlackNotifier(Notifiable):
     
-    def __init__(self, bot_token: str, channel: str):
+    def __init__(self, bot_token: str, channel: str, cluster_name: Optional[str] = None):
         self._logger = logging.getLogger(self.__class__.__name__)
         self.client = WebClient(token=bot_token)
         self.channel = channel
+        self.cluster_name = cluster_name
 
     def _create_timestamp_table(self, event_data: K8Event) -> dict:
         return {
@@ -100,9 +101,41 @@ class SlackNotifier(Notifiable):
                     ]
                 }
             ]
+    
+    def _create_fields(self, event_data: K8Event) -> list:
+        base_fields = [
+            {
+                "type": "mrkdwn",
+                "text": f"*Namespace:*\n{event_data.involved_object.namespace}"
+            },
+            {
+                "type": "mrkdwn",
+                "text": f"*Involved Object:*\n{event_data.involved_object.kind} / `{event_data.involved_object.name}`"
+            },
+            {
+                "type": "mrkdwn",
+                "text": f"*Alert Type:*\n{event_data.type}"
+            },
+            {
+                "type": "mrkdwn",
+                "text": f"*Reason:*\n{event_data.reason}"
+            }
+        ]
+
+        if self.cluster_name:
+            base_fields.insert(0, {
+                "type": "mrkdwn",
+                "text": f"*Cluster:*\n{self.cluster_name}"
+            })
+
+        return base_fields
 
     def notify(self, event_data: K8Event, logs: Optional[str] = None) -> None:
         self._logger.info(f"Sending Slack notification for event: {event_data.name} in namespace: {event_data.namespace}")
+
+        header_title = f"*{event_data.type}:*"
+        if self.cluster_name:
+            header_title = f"*[{self.cluster_name}]*" + header_title 
         
         # Notify slack of the event
         postMessage_response = self.client.chat_postMessage(
@@ -119,24 +152,7 @@ class SlackNotifier(Notifiable):
                 
                 {
                     "type": "section",
-                    "fields": [
-                        {
-                            "type": "mrkdwn",
-                            "text": f"*Namespace:*\n{event_data.involved_object.namespace}"
-                        },
-                        {
-                            "type": "mrkdwn",
-                            "text": f"*Involved Object:*\n{event_data.involved_object.kind} / {event_data.involved_object.name}"
-                        },
-                        {
-                            "type": "mrkdwn",
-                            "text": f"*Alert Type:*\n{event_data.type}"
-                        },
-                        {
-                            "type": "mrkdwn",
-                            "text": f"*Reason:*\n{event_data.reason}"
-                        }
-                    ]
+                    "fields": self._create_fields(event_data)
                 },
                 {
                     "type": "divider"
@@ -155,23 +171,6 @@ class SlackNotifier(Notifiable):
                         }
                     ]
                 },
-                # {
-                #     "type": "rich_text",
-                #     "elements": [
-                #         {
-                #             "type": "rich_text_section",
-                #             "elements": [
-                #                 {
-                #                     "type": "text",
-                #                     "text": "Timeline",
-                #                     "style": {
-                #                         "bold": True
-                #                     }
-                #                 }
-                #             ]
-                #         }
-                #     ]
-                # },
                 self._create_timestamp_table(event_data),
             ]
         )
@@ -189,9 +188,11 @@ class SlackNotifier(Notifiable):
             message_ts = postMessage_response.get('ts')
             channel_id = postMessage_response.get('channel')
 
+            file_name = f"logs_{event_data.involved_object.kind}_{event_data.involved_object.namespace}_{event_data.involved_object.name}.txt".lower().replace("-","_")
+
             # Allocate upload space on Slack
             getUploadURLExternal_response = self.client.files_getUploadURLExternal(
-                filename=f"logs_{event_data.involved_object.kind}_{event_data.involved_object.namespace}_{event_data.involved_object.name}.txt",
+                filename=file_name,
                 length=len(logs),
                 snippet_type="text"
             )
@@ -237,7 +238,7 @@ class SlackNotifier(Notifiable):
                 files=[
                     {
                         "id": file_id,
-                        "title": f"logs_{event_data.involved_object.kind}_{event_data.involved_object.namespace}_{event_data.involved_object.name}.txt",
+                        "title": file_name,
                     }
                 ]
             )

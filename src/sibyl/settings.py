@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from os import environ
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic_settings import BaseSettings
 from typing_extensions import Self
@@ -27,3 +27,5 @@ class Settings(BaseSettings):
 
     SLACK_BOT_TOKEN: str = Field(description="Slack Bot Token for sending notifications")
     SLACK_CHANNEL: str = Field(description="Slack Channel ID to send notifications to")
+
+    CLUSTER_NAME: Optional[str] = Field(default=None, description="Optional name of the Kubernetes cluster to include in notifications")
