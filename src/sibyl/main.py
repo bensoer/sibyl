@@ -163,7 +163,7 @@ def main() -> None:
             # We only fetch logs if the events are from pods and from kubelet
             if "Pod" == event.involved_object.kind and "kubelet" == event.source.component:
                 logger.info(f"Processing event: {event}")
-                logs = log_fetcher.fetch_pod_logs_from_event(event, tail_lines=10)
+                logs = log_fetcher.fetch_pod_logs_from_event(event, tail_lines=settings.POD_LOG_TAIL_LINES)
                 logger.debug(f"Fetched logs for event: {logs}")
             else:
                 logger.debug(f"Event type is not from a Pod, skipping log fetch. Event Type: {event.involved_object.kind}. Component: {event.source.component}")

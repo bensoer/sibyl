@@ -29,3 +29,4 @@ class Settings(BaseSettings):
     SLACK_CHANNEL: str = Field(description="Slack Channel ID to send notifications to")
 
     CLUSTER_NAME: Optional[str] = Field(default=None, description="Optional name of the Kubernetes cluster to include in notifications")
+    POD_LOG_TAIL_LINES: int = Field(ge=10, default=100, description="Number of lines to fetch from pod logs for notifications")
