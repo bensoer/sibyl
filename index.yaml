@@ -2,6 +2,16 @@ apiVersion: v1
 entries:
   sibyl:
   - apiVersion: v2
+    appVersion: v0.1.1
+    created: "2025-11-30T20:40:02.105436477Z"
+    description: A Helm chart for Sibyl
+    digest: 70aa8a385e9e51acb67e9e7d1aa70bf7dc58a27225d5a655a1ab8b0e63b01fd4
+    name: sibyl
+    type: application
+    urls:
+    - https://github.com/bensoer/sibyl/releases/download/sibyl-0.1.1/sibyl-0.1.1.tgz
+    version: 0.1.1
+  - apiVersion: v2
     appVersion: v0.1.0
     created: "2025-11-30T01:18:45.083885346Z"
     description: A Helm chart for Sibyl
@@ -11,4 +21,4 @@ entries:
     urls:
     - https://github.com/bensoer/sibyl/releases/download/sibyl-0.1.0/sibyl-0.1.0.tgz
     version: 0.1.0
-generated: "2025-11-30T01:18:45.083893681Z"
+generated: "2025-11-30T20:40:02.105444932Z"
