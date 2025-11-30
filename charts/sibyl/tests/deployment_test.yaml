@@ -112,3 +112,31 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].readinessProbe.httpGet.port
           value: 8082
+  
+  - it: should set podLogTailLines env
+    set:
+      podLogTailLines: 50
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: POD_LOG_TAIL_LINES
+            value: "50"
+
+  - it: should set clusterName env
+    set:
+      clusterName: "my-cluster"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLUSTER_NAME
+            value: "my-cluster"
+
+  - it: should not have CLUSTER_NAME env by default
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env
+          value:
+            - name: POD_LOG_TAIL_LINES
+              value: "100"

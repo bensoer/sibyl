@@ -63,7 +63,13 @@ spec:
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          
+          env:
+            - name: POD_LOG_TAIL_LINES
+              value: "{{ .Values.podLogTailLines }}"
+            {{- if .Values.clusterName }}
+            - name: CLUSTER_NAME
+              value: "{{ .Values.clusterName }}"
+            {{- end }}
           envFrom:
           {{- if .Values.slack.useExistingSecret.enabled }}
             - secretRef:

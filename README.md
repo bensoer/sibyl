@@ -52,10 +52,19 @@ Sibyl comes with a handful of configurations you can modify in the project.
 | -------- | ----------- | -------- | ------------------------------- |
 | `SLACK_BOT_TOKEN` | Slack App Bot Auth Token | TRUE | N/A |
 | `SLACK_CHANNEL` | Slack Channel To Post Alerts To | TRUE | Both `#mychannelname` and `mychannelname` formats are accepted |
+| `CLUSTER_NAME` | Set the cluster name for the app, resulting in the cluster name being included as context in the slack alerts | FALSE | `null` which means the cluster name is not included in slack notifications|
+| `POD_LOG_TAIL_LINES` | The number of lines Sibyl tails off the problem pod it is trying to fetch logs from | FALSE | 100
 | `LOG_LEVEL` | Set the log output level. `DEBUG` will output log from depednency libraries as well | FALSE | Default: `INFO`. Options: `INFO`, `DEBUG`, `WARNING`, `ERROR` |
 | `HEALTH_CHECK_PORT` | Set the port to listen for health checks. You will need to update the Helm chart to match this value if changed | FALSE | 8080
 
-The above configurations are passed to Sibyl, and read at startup, via  environment variables. The `SLACK_BOT_TOKEN` and `SLACK_CHANNEL` variables are the only ones that have been mapped out into helm values though.
+The above configurations are passed to Sibyl, and read at startup, via  environment variables. 
+
+**Note:** the following variables are mapped through to the Helm chart. See the helm chart README for details:
+- `SLACK_BOT_TOKEN`
+- `SLACK_CHANNEL`
+- `CLUSTER_NAME`
+- `POD_LOG_TAIL_LINES`
+
 
 To modify the other settings you will need to do the following:
 
@@ -83,11 +92,22 @@ To modify the other settings you will need to do the following:
     kubectl rollout restart deployment sibyl
     ```
 
+# Feature List
+Below is the completed & in-progress feature list for Sibyl
 
-# Future Features
-- Multi-cluster support
-    - Include the cluster name in the alerts so that multiple sibyls can use the same slack app
-- Remove headers from the table ? Kinda useless extra information, the rows give enough context
+- :white_check_mark: Multi-cluster support - Add optional cluster name to output
+- :white_check_mark: Improved highlighting in alerts
+- :white_check_mark: Explicite control of log tailing value
+
+Still To Come:
+
+- Multi-cluster support - Access clusters external to the one Sibyl is running in
+- Ability to manually configure what error types Sibyl watches for
+- Ability to manually configure conditions to fetch logs for
+
+Some further downs that _might_ be implemented:
+- Switch event_watch to a process instead of a thread to remove any potential GIL limitations
+- Move log fetching into the event_watch thread/process to make log fetching more immediate to when the event arrives
 
 
 # Developer Notes

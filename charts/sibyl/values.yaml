@@ -28,6 +28,14 @@ slack:
       name: ""
       key: ""
 
+# Optional cluster name to uniquely identify this instance of Sibyl when sending notications. Useful if you have
+# multiple Sibyl instances sending notifications to the same slack app
+# - null means no name is supplied and thus no cluster name is included in notifications
+clusterName: null
+
+# Number of lines to fetch from problem pods for notications. Slack snippet max size is 1MB so be careful increasing this too much.
+podLogTailLines: 100
+
 # This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
 serviceAccount:
   # Specifies whether a service account should be created.
