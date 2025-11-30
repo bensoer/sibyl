@@ -10,41 +10,41 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # python-unit-tests:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
+  python-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
         
-  #     - name: Set up Python with uv
-  #       # This action handles installing uv and can set the Python version
-  #       uses: astral-sh/setup-uv@v7 # Use the latest version
-  #       with:
-  #         # Optionally specify a Python version or let uv read it from .python-version or pyproject.toml
-  #         python-version: '3.11' 
-  #         # Enable caching for faster dependency resolution on subsequent runs
-  #         enable-cache: true
+      - name: Set up Python with uv
+        # This action handles installing uv and can set the Python version
+        uses: astral-sh/setup-uv@v7 # Use the latest version
+        with:
+          # Optionally specify a Python version or let uv read it from .python-version or pyproject.toml
+          python-version: '3.11' 
+          # Enable caching for faster dependency resolution on subsequent runs
+          enable-cache: true
 
-  #     - name: Install Dependencies
-  #       run: uv sync
+      - name: Install Dependencies
+        run: uv sync
   
-  #     - name: Run PyTests
-  #       run: uv run pytest
+      - name: Run PyTests
+        run: uv run pytest
 
-  #     - name: Upload Pytest JUnit Artifact
-  #       uses: actions/upload-artifact@v4
-  #       if: always()
-  #       with:
-  #         name: pytest-junit-report
-  #         path: reports/junit/unit.xml
+      - name: Upload Pytest JUnit Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pytest-junit-report
+          path: reports/junit/unit.xml
             
-  #     # Upload the Coverage XML file for external tools (e.g., Codecov, SonarQube)
-  #     - name: Upload Coverage XML Artifact
-  #       uses: actions/upload-artifact@v4
-  #       if: always()
-  #       with:
-  #         name: pytest-coverage-xml-report
-  #         path: reports/coverage/coverage.xml
+      # Upload the Coverage XML file for external tools (e.g., Codecov, SonarQube)
+      - name: Upload Coverage XML Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pytest-coverage-xml-report
+          path: reports/coverage/coverage.xml
 
   helm-unit-tests:
     runs-on: ubuntu-latest
