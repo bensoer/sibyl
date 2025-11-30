@@ -8,10 +8,16 @@ tests:
           of: ClusterRole
       - equal:
           path: metadata.name
-          value: sibyl-editor-role
+          value: RELEASE-NAME-sibyl-cluster-role
       - contains:
           path: rules
           content:
             apiGroups: [""]
             resources: ["events"]
             verbs: ["watch", "get", "list"]
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: ["pods/log"]
+            verbs: ["get", "list"]

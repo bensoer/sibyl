@@ -16,6 +16,18 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+slack:
+  # The channel name Sibyl sends notifications to. NOTE: Sibyl must be invited to the channel
+  channel: ""
+  # Bot token for Sibyl to authenticate with Slack API
+  botToken: ""
+  # Use an existing secret for slack credetnials. If enabled the `channel` and `botToken` values are ignored.
+  useExistingSecret:
+    enabled: false
+    secretRef:
+      name: ""
+      key: ""
+
 # This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
 serviceAccount:
   # Specifies whether a service account should be created.
