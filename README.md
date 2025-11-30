@@ -38,13 +38,50 @@ Install with Helm by running:
 # Add The Repository
 helm repo add sibyl https://bensoer.github.io/sibyl
 # Install the chart
-helm upgrade --install sibyl/sibyl --set slack.channel=<YOUR_SLACK_CHANNEL> --set slack.botToken=<BOT_TOKEN>
+helm upgrade --install sibyl sibyl/sibyl --set slack.channel=<YOUR_SLACK_CHANNEL> --set slack.botToken=<BOT_TOKEN>
 ```
 
 Set `YOUR_SLACK_CHANNEL` to the channel your selected in step 8 when you installed Sibyl slack app in your workspace
 
 Set `BOT_TOKEN` to the "Bot User OAuth Token" on the Settings > Install App page of your Sibyl Slack App
 
+# Configuration
+Sibyl comes with a handful of configurations you can modify in the project.
+
+| Variable | Description | Required | Default Value / Possible Values |
+| -------- | ----------- | -------- | ------------------------------- |
+| `SLACK_BOT_TOKEN` | Slack App Bot Auth Token | TRUE | N/A |
+| `SLACK_CHANNEL` | Slack Channel To Post Alerts To | TRUE | Both `#mychannelname` and `mychannelname` formats are accepted |
+| `LOG_LEVEL` | Set the log output level. `DEBUG` will output log from depednency libraries as well | FALSE | Default: `INFO`. Options: `INFO`, `DEBUG`, `WARNING`, `ERROR` |
+| `HEALTH_CHECK_PORT` | Set the port to listen for health checks. You will need to update the Helm chart to match this value if changed | FALSE | 8080
+
+The above configurations are passed to Sibyl, and read at startup, via  environment variables. The `SLACK_BOT_TOKEN` and `SLACK_CHANNEL` variables are the only ones that have been mapped out into helm values though.
+
+To modify the other settings you will need to do the following:
+
+1. Create a secret within your cluster called `sibyl-env-configuration` containing keys that match each environment variable and the values to the setting you want. Example:
+    ```yaml
+    apiVersion: v1
+    kind: Secret
+    metadata:
+    name: sibyl-env-credentials
+    stringData:
+        LOG_LEVEL: DEBUG
+    ```
+2. Apply this secret into the same namespace as sibyl is deployed
+3. Deploy the helm chart with its `envFrom` values pointing at the configuration secret:
+    ```bash
+    helm upgrade --install sibyl sibyl/sibyl --set slack.channel=<YOUR_SLACK_CHANNEL> --set slack.botToken=<BOT_TOKEN>
+    --set envFrom[0].secretRef.name=sibyl-env-credentials
+    ```
+    Alternatively, make a copy of the `values.yaml` file and apply these changes and deploy it like this (assuming you set `slack.channel` and `slack.botToken` within it as well)
+    ```bash
+    helm upgrade --install sibyl sibyl/sibyl --values=./yourvaluesfile.yaml
+    ```
+4. If the deployment does not restart Sibyl, give it a restart through kubectl:
+    ```bash
+    kubectl rollout restart deployment sibyl
+    ```
 
 
 
