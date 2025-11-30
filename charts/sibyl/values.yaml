@@ -26,7 +26,6 @@ slack:
     enabled: false
     secretRef:
       name: ""
-      key: ""
 
 # Optional cluster name to uniquely identify this instance of Sibyl when sending notications. Useful if you have
 # multiple Sibyl instances sending notifications to the same slack app

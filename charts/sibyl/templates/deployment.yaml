@@ -73,7 +73,7 @@ spec:
           envFrom:
           {{- if .Values.slack.useExistingSecret.enabled }}
             - secretRef:
-                name: {{ .Values.slack.useExistingSecret.secretRef.name }}
+                name: {{ .Values.slack.useExistingSecret.secretRef.name | required "If using an existing secret. 'slack.useExistingSecret.secretRef.name' is required" }}
           {{- else }}
             - secretRef:
                 name: {{ include "sibyl.fullname" . }}-slack-credentials
