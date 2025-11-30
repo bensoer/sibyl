@@ -146,7 +146,7 @@ class SlackNotifier(Notifiable):
                     "type" : "section",
                     "text": {
                         "type":"mrkdwn",
-                        "text": f"*{event_data.type}:* {event_data.involved_object.kind} `{event_data.involved_object.namespace}/{event_data.involved_object.name}` -> {event_data.reason} "
+                        "text": f"{header_title} {event_data.involved_object.kind} `{event_data.involved_object.namespace}/{event_data.involved_object.name}` -> {event_data.reason} "
                     }
                 },
                 
