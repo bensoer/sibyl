@@ -7,6 +7,10 @@ from queue import Queue
 import time
 
 from sibyl.event_watch.event_watch import EventWatch
+from sibyl.models.events.k8_event import K8Event
+from sibyl.models.events.k8_event_involved_object import K8EventInvolvedObject
+from sibyl.models.events.k8_event_metadata import K8EventMetadata
+from sibyl.models.events.k8_event_source import K8EventSource
 
 class EventWatchThread(Thread):
 
@@ -46,8 +50,10 @@ class EventWatchThread(Thread):
             if k8s_event.type in self.ERROR_TYPES:
                 self._logger.debug(f"Detected K8s Event: {k8s_event.reason} - {k8s_event.message}")
                 self.event_queue.put(self._format_event(k8s_event))
+            else:
+                self._logger.debug(f"Ignoring Non-Error K8s Event: {k8s_event.reason} - {k8s_event.message}")
 
-        event_watch = EventWatch(timeout_seconds=300)
+        event_watch = EventWatch(self.core_v1_client, timeout_seconds=300)
         while not self._stop_event.is_set():
             try:
 
@@ -64,29 +70,35 @@ class EventWatchThread(Thread):
                 self._logger.error(f"Unexpected error in Watcher: {e}. Retrying in 10s...")
                 time.sleep(10)
 
-    def _format_event(self, k8s_event: CoreV1Event) -> dict:
+    def _format_event(self, k8s_event: CoreV1Event) -> K8Event:
         """Formats the CoreV1Event object into a simple dictionary for the queue."""
 
-        return {
-            "kind": k8s_event.kind,
-            "source": k8s_event.source,
-            "action": k8s_event.action,
-            "type": k8s_event.type,
-            "namespace": k8s_event.metadata.namespace,
-            "reason": k8s_event.reason,
-            "message": k8s_event.message,
-            "metadata": {
-                "cluster_name": k8s_event.metadata.cluster_name,
-                "name": k8s_event.metadata.name,
-                "namespace": k8s_event.metadata.namespace,
-                "creation_timestamp": k8s_event.metadata.creation_timestamp.isoformat() if k8s_event.metadata.creation_timestamp else "N/A",
-                "deletion_timestamp": k8s_event.metadata.deletion_timestamp.isoformat() if k8s_event.metadata.deletion_timestamp else "N/A",
-                "deletion_graece_period_seconds": k8s_event.metadata.deletion_grace_period_seconds,
-            },
-            "involved_object": {
-                "kind": k8s_event.involved_object.kind,
-                "name": k8s_event.involved_object.name,
-                "namespace": k8s_event.involved_object.namespace,
-            },
-            "timestamp": k8s_event.last_timestamp.isoformat() if k8s_event.last_timestamp else "N/A"
-        }
+        k8_event_source = K8EventSource(
+            component=k8s_event.source.component,
+            host=k8s_event.source.host
+        )
+        k8_event_metadata = K8EventMetadata(
+            name=k8s_event.metadata.name,
+            namespace=k8s_event.metadata.namespace,
+            creation_timestamp=k8s_event.metadata.creation_timestamp.isoformat() if k8s_event.metadata.creation_timestamp else None,
+            deletion_timestamp=k8s_event.metadata.deletion_timestamp.isoformat() if k8s_event.metadata.deletion_timestamp else None
+        )
+        k8_event_involved_object = K8EventInvolvedObject(
+            kind=k8s_event.involved_object.kind,
+            name=k8s_event.involved_object.name,
+            namespace=k8s_event.involved_object.namespace
+        )
+
+        return K8Event(
+            kind=k8s_event.kind,
+            source=k8_event_source,
+            action=k8s_event.action,
+            type=k8s_event.type,
+            namespace=k8s_event.metadata.namespace,
+            name=k8s_event.metadata.name,
+            reason=k8s_event.reason,
+            message=k8s_event.message,
+            metadata=k8_event_metadata,
+            involved_object=k8_event_involved_object,
+            timestamp=k8s_event.last_timestamp.isoformat() if k8s_event.last_timestamp else "N/A"
+        )

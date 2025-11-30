@@ -1,7 +1,7 @@
 
 
 import logging
-from queue import Queue
+from queue import Queue, Empty
 import signal
 from sys import exit, stdout
 from typing import Optional
@@ -9,6 +9,9 @@ from pythonjsonlogger import jsonlogger
 
 from sibyl.event_watch.event_watch_thread import EventWatchThread
 from sibyl.health_check.health_status_thread import HealthStatusThread
+from sibyl.log_fetcher import LogFetcher
+from sibyl.models.events.k8_event import K8Event
+from sibyl.notifications.slack_notifier import SlackNotifier
 from sibyl.settings import Settings
 
 print("==== Starting Application ====")
@@ -29,9 +32,7 @@ logging_levels = {
     'INFO': logging.INFO,
     'DEBUG': logging.DEBUG,
 }
-#logging_level_int = logging_levels.get(settings.LOG_LEVEL, logging.INFO)
-logging_level_int = logging.DEBUG
-
+logging_level_int = logging_levels.get(settings.LOG_LEVEL, logging.INFO)
 rootLogger = logging.getLogger()
 rootLogger.setLevel(logging_level_int)
 
@@ -59,7 +60,7 @@ rootLogger.addHandler(handler)
 # Suppress verbose logging from third-party libraries
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("werkzeug").setLevel(logging.WARNING if logging_level_int != logging.DEBUG else logging.INFO)
-
+logging.getLogger("slack_sdk.web.base_client").setLevel(logging.WARNING if logging_level_int != logging.DEBUG else logging.INFO)
 # This is our logger for this main bootstrapping code here. Classes all log using a class logger
 # that inherits configuration from the rootLogger
 logger = logging.getLogger("sibyl")
@@ -103,7 +104,7 @@ def main() -> None:
 \ \  \___|\ \  \ \  \|\ /_   \ \  \/  / | \  \        
  \ \_____  \ \  \ \   __  \   \ \    / / \ \  \       
   \|____|\  \ \  \ \  \|\  \   \/  /  /   \ \  \____  
-    ____\_\  \ \__\ \_______\__/  / /      \ \_______\
+    ____\_\  \ \__\ \_______\__/  / /      \ \_______\\
    |\_________\|__|\|_______|\___/ /        \|_______|
    \|_________|             \|___|/                   
                                                       
@@ -121,10 +122,14 @@ def main() -> None:
     health_status.set_ready(False)  # Mark as not ready during initialization
     logger.debug("Health Check Endpoints Started")
 
-    logger.info("Starting Kubernetes Event Watcher Thread")
+    logger.info("Initializing Components")
     event_queue = Queue()
     event_watch_thread: Optional[EventWatchThread] = None
+    log_fetcher: Optional[LogFetcher] = None
 
+
+    logger.info("Starting Kubernetes Event Watcher Thread")
+    
     try:
         event_watch_thread = EventWatchThread(event_queue)
         event_watch_thread.start()
@@ -132,6 +137,15 @@ def main() -> None:
         logger.error(f"Failed to start Kubernetes Event Watcher Thread")
         event_watch_thread = None
         exit(1)
+
+    try:
+        log_fetcher = LogFetcher()
+    except Exception as e:
+        logger.error(f"Failed to initialize LogFetcher")
+        log_fetcher = None
+        exit(1)
+
+    slack_notifier = SlackNotifier(bot_token=settings.SLACK_BOT_TOKEN, channel=settings.SLACK_CHANNEL)
 
     logger.debug("Kubernetes Event Watcher Thread Started")
 
@@ -143,9 +157,21 @@ def main() -> None:
     while CONTINUE_PROCESSING:
         # Main loop can process events from the event_queue here
         try:
-            event = event_queue.get(block=True, timeout=1)  # Wait for an event for up to 1 second
-            logger.info(f"Processing event: {event}")
-            # Process the event here
+            event: K8Event = event_queue.get(block=True, timeout=30)  # Wait for an event for up to 30 seconds
+            logs: Optional[str] = None
+
+            # We only fetch logs if the events are from pods and from kubelet
+            if "Pod" == event.involved_object.kind and "kubelet" == event.source.component:
+                logger.info(f"Processing event: {event}")
+                logs = log_fetcher.fetch_pod_logs_from_event(event, tail_lines=10)
+                logger.debug(f"Fetched logs for event: {logs}")
+            else:
+                logger.debug(f"Event type is not from a Pod, skipping log fetch. Event Type: {event.involved_object.kind}. Component: {event.source.component}")
+
+            slack_notifier.notify(event, logs=logs)
+        except Empty:
+            # Timeout occurred, no event received, continue the loop
+            continue
         except Exception as e:
             logger.error(f"Error processing event: {e}", exc_info=e)
             # Timeout occurred, no event received, continue the loop

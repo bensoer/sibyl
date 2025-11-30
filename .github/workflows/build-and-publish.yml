@@ -110,10 +110,10 @@ jobs:
                 type=ref,event=tag
                 type=sha
             labels: |
-                org.opencontainers.image.title=com.projectterris.external-secrets-reloader
-                org.opencontainers.image.description=External Secrets Reloader
+                org.opencontainers.image.title=com.projectterris.sibyl
+                org.opencontainers.image.description=Sibyl
                 org.opencontainers.image.vendor=project-terris
-                com.project-terris.external-secrets-reloader.image.pyprojectversion=${{ steps.get_version.outputs.version }}
+                com.project-terris.sibyl.image.pyprojectversion=${{ steps.get_version.outputs.version }}
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v4.0.0

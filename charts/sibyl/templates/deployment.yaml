@@ -63,9 +63,17 @@ spec:
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.envFrom }}
+          
           envFrom:
-            {{- toYaml . |nindent 12 }}
+          {{- if .Values.slack.useExistingSecret.enabled }}
+            - secretRef:
+                name: {{ .Values.slack.useExistingSecret.secretRef.name }}
+          {{- else }}
+            - secretRef:
+                name: {{ include "sibyl.fullname" . }}-slack-credentials
+          {{- end }}
+          {{- with .Values.envFrom }}
+{{ toYaml . | indent 12 }}
           {{- end }}
       {{- with .Values.volumes }}
       volumes:
