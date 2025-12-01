@@ -37,7 +37,7 @@ Defines the `Settings` class using Pydantic's `BaseSettings` for managing applic
 ### `src/sibyl/health_check/`
 Manages the application's health and readiness status.
 *   **`health_status.py`**: A simple class (`HealthStatus`) to maintain the current health and readiness state, using threading locks for thread-safety.
-*   **`health_status_thread.py`**: Runs a `Flask` web server in a separate thread, exposing `/health` (liveness) and `/ready` (readiness) HTTP endpoints. These endpoints reflect the status managed by `HealthStatus`.
+*   **`health_status_thread.py`**: Runs a `Flask` web server in a separate thread, exposing `/health` (liveness) and `/ready` HTTP endpoints. These endpoints reflect the status managed by `HealthStatus`.
 
 ### `src/sibyl/event_watch/`
 Responsible for monitoring Kubernetes API for events.
@@ -71,11 +71,14 @@ Contains Python `dataclass`es representing various Kubernetes event structures.
 
 ## Important Notes for Gemini Agent
 
-*   **Logging:** The application uses structured JSON logging configured via `python-json-logger`.
+*   **Logging:** The application uses structured JSON logging configured via `python-json_logger`.
 *   **Error Handling:** Components often include `try-except` blocks to handle Kubernetes API errors and general exceptions gracefully, often with retry mechanisms or logging.
 *   **Concurrency:** Multiple parts of the application (event watching, health checks) run in separate Python `Thread`s. Special attention was given to testing these concurrent components.
 *   **Kubernetes Context:** The application expects to run within a Kubernetes cluster (`config.load_incluster_config()`) for its primary functionality.
 *   **Pydantic Settings:** Configuration is handled strictly by Pydantic, meaning required environment variables must be set for the application to initialize correctly. During testing, these were mocked or dummy environment variables were set.
 *   **Test Architecture:** Test files are mirrored under the `tests/` directory (e.g., `src/sibyl/module.py` has tests in `tests/test_module.py` or `tests/module/test_file.py` for subdirectories).
 
-This `GEMINI.md` should provide sufficient context to begin working on the Sibyl project effectively.
+### Recent Project Changes and Conventions
+
+*   **Multi-Container Log Fetching**: The `LogFetcher` class (`src/sibyl/log_fetcher.py`) has been enhanced to fetch logs from *all* containers within a Kubernetes Pod. The `fetch_pod_logs_from_event` method now returns a `List[tuple[str, str]]`, where each tuple contains `(container_name, log_content)`.
+*   **Slack Notification `channels` Parameter**: When using the `slack-sdk`'s `files_completeUploadExternal` method (e.g., in `src/sibyl/notifications/slack_notifier.py`), always use the `channels` parameter (which expects a list of channel IDs) instead of the `channel_id` parameter. The `channel_id` parameter is considered legacy and should be avoided in favor of `channels` to ensure compatibility and correct functionality.

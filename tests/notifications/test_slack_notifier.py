@@ -62,12 +62,61 @@ def test_notify_with_logs(slack_notifier, k8_event_data, mocker):
     requests.post.return_value.raise_for_status.return_value = None
     slack_notifier.client.files_completeUploadExternal.return_value = {"ok": True}
 
-    slack_notifier.notify(k8_event_data, logs="some logs")
+    logs_data = [("container1", "logs for container1"), ("container2", "logs for container2")]
+    slack_notifier.notify(k8_event_data, logs=logs_data)
 
-    slack_notifier.client.chat_postMessage.assert_called_once()
-    slack_notifier.client.files_getUploadURLExternal.assert_called_once()
-    requests.post.assert_called_once_with("http://upload.url", headers={'Content-Type': 'application/octet-stream'}, data="some logs".encode('utf-8'))
-    slack_notifier.client.files_completeUploadExternal.assert_called_once()
+    # Assert initial message
+    slack_notifier.client.chat_postMessage.assert_any_call(
+        channel="test_channel",
+        text=mocker.ANY,
+        blocks=mocker.ANY
+    )
+    # Assert log uploads for each container
+    assert slack_notifier.client.files_getUploadURLExternal.call_count == 2
+    assert requests.post.call_count == 2
+    assert slack_notifier.client.files_completeUploadExternal.call_count == 2
+
+    # Assert specific calls for container1
+    slack_notifier.client.files_getUploadURLExternal.assert_any_call(
+        filename=f"logs_pod_default_test_pod_container1.txt",
+        length=len("logs for container1"),
+        snippet_type="text"
+    )
+    requests.post.assert_any_call(
+        "http://upload.url",
+        headers={'Content-Type': 'application/octet-stream'},
+        data="logs for container1".encode('utf-8')
+    )
+    slack_notifier.client.files_completeUploadExternal.assert_any_call(
+        upload_url=mocker.ANY,
+        channels=[mocker.ANY],
+        thread_ts="12345",
+        initial_comment=mocker.ANY,
+        files=mocker.ANY
+    )
+    slack_notifier.client.files_getUploadURLExternal.assert_any_call(
+        filename=f"logs_pod_default_test_pod_container2.txt",
+        length=len("logs for container2"),
+        snippet_type="text"
+    )
+    requests.post.assert_any_call(
+        "http://upload.url",
+        headers={'Content-Type': 'application/octet-stream'},
+        data="logs for container2".encode('utf-8')
+    )
+    slack_notifier.client.files_completeUploadExternal.assert_any_call(
+        upload_url=mocker.ANY,
+        channels=[mocker.ANY],
+        thread_ts="12345",
+        initial_comment=mocker.ANY,
+        files=mocker.ANY
+    )
+    # The threaded messages are part of files_completeUploadExternal, so no separate chat_postMessage call to assert
+    # slack_notifier.client.chat_postMessage.assert_any_call(
+    #     channel="C123",
+    #     thread_ts="12345",
+    #     text=mocker.ANY
+    # )
 
 def test_notify_post_message_fails(slack_notifier, k8_event_data, caplog):
     slack_notifier.client.chat_postMessage.return_value = {"ok": False, "error": "test_error"}
@@ -77,8 +126,11 @@ def test_notify_post_message_fails(slack_notifier, k8_event_data, caplog):
 def test_notify_get_upload_url_fails(slack_notifier, k8_event_data, caplog):
     slack_notifier.client.chat_postMessage.return_value = {"ok": True, "ts": "12345", "channel": "C123"}
     slack_notifier.client.files_getUploadURLExternal.return_value = {"ok": False, "error": "test_error"}
-    slack_notifier.notify(k8_event_data, logs="some logs")
-    assert "Slack files.getUploadURLExternal Failed" in caplog.text
+    
+    logs_data = [("container1", "some logs")]
+    slack_notifier.notify(k8_event_data, logs=logs_data)
+    
+    assert "Slack files.getUploadURLExternal Failed for event default/test-pod -> container1 to Slack" in caplog.text
 
 @patch("requests.post")
 def test_notify_upload_fails(mock_post, slack_notifier, k8_event_data, caplog):
@@ -86,9 +138,10 @@ def test_notify_upload_fails(mock_post, slack_notifier, k8_event_data, caplog):
     slack_notifier.client.files_getUploadURLExternal.return_value = {"ok": True, "upload_url": "http://upload.url", "file_id": "F123"}
     mock_post.side_effect = requests.exceptions.RequestException("test error")
     
-    slack_notifier.notify(k8_event_data, logs="some logs")
+    logs_data = [("container1", "some logs")]
+    slack_notifier.notify(k8_event_data, logs=logs_data)
     
-    assert "Failed to upload logs" in caplog.text
+    assert "Failed to upload logs for event default/test-pod -> container1 to Slack" in caplog.text
 
 
 def test_notify_complete_upload_fails(slack_notifier, k8_event_data, caplog, mocker):
@@ -98,7 +151,8 @@ def test_notify_complete_upload_fails(slack_notifier, k8_event_data, caplog, moc
     requests.post.return_value.raise_for_status.return_value = None
     slack_notifier.client.files_completeUploadExternal.return_value = {"ok": False, "error": "test_error"}
     
-    slack_notifier.notify(k8_event_data, logs="some logs")
+    logs_data = [("container1", "some logs")]
+    slack_notifier.notify(k8_event_data, logs=logs_data)
     
-    assert "Slack files.completeUploadExternal Failed" in caplog.text
+    assert "Slack files.completeUploadExternal Failed for event default/test-pod -> container1" in caplog.text
 

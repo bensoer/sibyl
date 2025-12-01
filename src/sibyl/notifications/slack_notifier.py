@@ -1,7 +1,7 @@
 
 
 import logging
-from typing import Optional
+from typing import List, Optional
 
 import requests
 from slack_sdk.webhook import WebhookClient
@@ -130,7 +130,7 @@ class SlackNotifier(Notifiable):
 
         return base_fields
 
-    def notify(self, event_data: K8Event, logs: Optional[str] = None) -> None:
+    def notify(self, event_data: K8Event, logs: List[tuple[str,str]] = []) -> None:
         self._logger.info(f"Sending Slack notification for event: {event_data.name} in namespace: {event_data.namespace}")
 
         header_title = f"{event_data.type}:"
@@ -189,70 +189,70 @@ class SlackNotifier(Notifiable):
             message_ts = postMessage_response.get('ts')
             channel_id = postMessage_response.get('channel')
 
-            file_name = f"logs_{event_data.involved_object.kind}_{event_data.involved_object.namespace}_{event_data.involved_object.name}.txt".lower().replace("-","_")
+            for log in logs:
+                container_name, log_content = log
 
-            # Allocate upload space on Slack
-            getUploadURLExternal_response = self.client.files_getUploadURLExternal(
-                filename=file_name,
-                length=len(logs),
-                snippet_type="text"
-            )
+                file_name = f"logs_{event_data.involved_object.kind}_{event_data.involved_object.namespace}_{event_data.involved_object.name}_{container_name}.txt".lower().replace("-","_")
 
-            # Check allocation was successful
-            ok = getUploadURLExternal_response.get("ok", False)
-            if not ok:
-                error = getUploadURLExternal_response.get("error")
-                if error:
-                    self._logger.error(f"Slack files.getUploadURLExternal Failed for event {event_data.involved_object.namespace}/{event_data.involved_object.name} to Slack: {error}")
-                return
-
-
-            upload_url = getUploadURLExternal_response.get("upload_url")
-            file_id = getUploadURLExternal_response.get("file_id")
-
-
-            # Upload the actual log/file contents
-            try:
-                headers = {
-                    # This header tells the server we are sending raw bytes
-                    'Content-Type': 'application/octet-stream'
-                }
-                upload_response = requests.post(
-                    upload_url, 
-                    headers=headers, 
-                    data=logs.encode('utf-8'),
-                    
+                # Allocate upload space on Slack
+                getUploadURLExternal_response = self.client.files_getUploadURLExternal(
+                    filename=file_name,
+                    length=len(log_content),
+                    snippet_type="text"
                 )
-                upload_response.raise_for_status()
-            except Exception as e:
-                self._logger.error(f"Failed to upload logs for event {event_data.involved_object.namespace}/{event_data.involved_object.name} to Slack", exc_info=e)
-                return
 
-            self._logger.debug("Sending To Channel ID: " + str(channel_id))
-            # Complete the upload process, posting the logs as a thread to the original message
-            completeUploadExternal_response = self.client.files_completeUploadExternal(
-                upload_url=upload_url,
-                channel_id=str(channel_id),
-                channels=[str(channel_id)],
-                thread_ts=message_ts,
-                initial_comment=f"Pod Logs For {event_data.involved_object.namespace}/{event_data.involved_object.name}",
-                files=[
-                    {
-                        "id": file_id,
-                        "title": file_name,
+                # Check allocation was successful
+                ok = getUploadURLExternal_response.get("ok", False)
+                if not ok:
+                    error = getUploadURLExternal_response.get("error")
+                    if error:
+                        self._logger.error(f"Slack files.getUploadURLExternal Failed for event {event_data.involved_object.namespace}/{event_data.involved_object.name} -> {container_name} to Slack", exc_info=error)
+                    return
+
+
+                upload_url = getUploadURLExternal_response.get("upload_url")
+                file_id = getUploadURLExternal_response.get("file_id")
+
+
+                # Upload the actual log/file contents
+                try:
+                    headers = {
+                        # This header tells the server we are sending raw bytes
+                        'Content-Type': 'application/octet-stream'
                     }
-                ]
-            )
+                    upload_response = requests.post(
+                        upload_url, 
+                        headers=headers, 
+                        data=log_content.encode('utf-8'),
+                        
+                    )
+                    upload_response.raise_for_status()
+                except Exception as e:
+                    self._logger.error(f"Failed to upload logs for event {event_data.involved_object.namespace}/{event_data.involved_object.name} -> {container_name} to Slack", exc_info=e)
+                    return
 
+                self._logger.debug("Sending To Channel ID: " + str(channel_id))
+                # Complete the upload process, posting the logs as a thread to the original message
+                completeUploadExternal_response = self.client.files_completeUploadExternal(
+                    upload_url=upload_url,
+                    channels=[str(channel_id)],
+                    thread_ts=message_ts,
+                    initial_comment=f"Logs for Container: {container_name} in Pod: {event_data.involved_object.namespace}/{event_data.involved_object.name}",
+                    files=[
+                        {
+                            "id": file_id,
+                            "title": file_name,
+                        }
+                    ]
+                )
 
-
-            # Check completion was successful
-            ok = completeUploadExternal_response.get("ok", False)
-            self._logger.debug(completeUploadExternal_response)
-            if not ok:
-                error = completeUploadExternal_response.get("error")
-                if error:
-                    self._logger.error(f"Slack files.completeUploadExternal Failed for event {event_data.involved_object.namespace}/{event_data.involved_object.name} to Slack: {error}")
-                return
+                # Check completion was successful
+                ok = completeUploadExternal_response.get("ok", False)
+                self._logger.debug(completeUploadExternal_response)
+                if not ok:
+                    error = completeUploadExternal_response.get("error")
+                    if error:
+                        self._logger.error(f"Slack files.completeUploadExternal Failed for event {event_data.involved_object.namespace}/{event_data.involved_object.name} -> {container_name} to Slack: {error}")
+                    return
 
 

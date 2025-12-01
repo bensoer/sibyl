@@ -39,7 +39,7 @@ def test_main_loop_pod_event(mock_main_dependencies):
     mock_queue.get.side_effect = [mock_event, SystemExit] # Stop after one event
 
     log_fetcher_instance = main.LogFetcher.return_value
-    log_fetcher_instance.fetch_pod_logs_from_event.return_value = "some logs"
+    log_fetcher_instance.fetch_pod_logs_from_event.return_value = [("test-container", "some logs")]
     
     slack_notifier_instance = main.SlackNotifier.return_value
 
@@ -47,7 +47,7 @@ def test_main_loop_pod_event(mock_main_dependencies):
         main.main()
 
     log_fetcher_instance.fetch_pod_logs_from_event.assert_called_once_with(mock_event, tail_lines=main.settings.POD_LOG_TAIL_LINES)
-    slack_notifier_instance.notify.assert_called_once_with(mock_event, logs="some logs")
+    slack_notifier_instance.notify.assert_called_once_with(mock_event, logs=[("test-container", "some logs")])
 
 def test_main_loop_non_pod_event(mock_main_dependencies):
     mock_queue = main.Queue.return_value
@@ -63,7 +63,7 @@ def test_main_loop_non_pod_event(mock_main_dependencies):
         main.main()
 
     log_fetcher_instance.fetch_pod_logs_from_event.assert_not_called()
-    slack_notifier_instance.notify.assert_called_once_with(mock_event, logs=None)
+    slack_notifier_instance.notify.assert_called_once_with(mock_event, logs=[])
 
 
 def test_main_loop_empty_queue(mock_main_dependencies):

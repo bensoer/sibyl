@@ -4,7 +4,7 @@ import logging
 from queue import Queue, Empty
 import signal
 from sys import exit, stdout
-from typing import Optional
+from typing import List, Optional
 from pythonjsonlogger import jsonlogger
 
 from sibyl.event_watch.event_watch_thread import EventWatchThread
@@ -158,12 +158,12 @@ def main() -> None:
         # Main loop can process events from the event_queue here
         try:
             event: K8Event = event_queue.get(block=True, timeout=30)  # Wait for an event for up to 30 seconds
-            logs: Optional[str] = None
+            logs: List[tuple[str,str]] = []
 
             # We only fetch logs if the events are from pods and from kubelet
             if "Pod" == event.involved_object.kind and "kubelet" == event.source.component:
                 logger.info(f"Processing event: {event}")
-                logs = log_fetcher.fetch_pod_logs_from_event(event, tail_lines=settings.POD_LOG_TAIL_LINES)
+                logs: List[tuple[str,str]] = log_fetcher.fetch_pod_logs_from_event(event, tail_lines=settings.POD_LOG_TAIL_LINES)
                 logger.debug(f"Fetched logs for event: {logs}")
             else:
                 logger.debug(f"Event type is not from a Pod, skipping log fetch. Event Type: {event.involved_object.kind}. Component: {event.source.component}")
