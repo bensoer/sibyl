@@ -98,16 +98,19 @@ Below is the completed & in-progress feature list for Sibyl
 - :white_check_mark: Multi-cluster support - Add optional cluster name to output
 - :white_check_mark: Improved highlighting in alerts
 - :white_check_mark: Explicite control of log tailing value
+- :white_check_mark: Multi container pod support - Fetches logs from all containers and organises them in the thread in Slack
 
 Still To Come:
 
 - Multi-cluster support - Access clusters external to the one Sibyl is running in
 - Ability to manually configure what error types Sibyl watches for
 - Ability to manually configure conditions to fetch logs for
+- Ability to specify list of container names to skip fetching logs for
 
 Some further downs that _might_ be implemented:
-- Switch event_watch to a process instead of a thread to remove any potential GIL limitations
-- Move log fetching into the event_watch thread/process to make log fetching more immediate to when the event arrives
+- :thinking: Switch event_watch to a process instead of a thread to remove any potential GIL limitations
+- :thinking: Move log fetching into the event_watch thread/process to make log fetching more immediate to when the event arrives
+- :thinking: Multi-threading / Async handing for multiple container log fetches
 
 
 # Developer Notes
