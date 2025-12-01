@@ -21,6 +21,9 @@ The primary goal of the Sibyl project is to provide a Python application that ru
 
 The application's Python source code is located in the `src/sibyl/` directory.
 
+### `charts/sibyl/`
+This directory contains the Helm chart for deploying the Sibyl application to a Kubernetes cluster. It defines the Kubernetes resources (Deployment, ServiceAccount, ClusterRole, ClusterRoleBinding, etc.) required for Sibyl to run and operate within the cluster, including necessary permissions to watch events and fetch pod logs.
+
 ### `src/sibyl/main.py`
 The main entry point of the application. It orchestrates the startup and management of various components:
 *   Initializes logging and signal handlers (`SIGINT`, `SIGTERM`).
@@ -66,6 +69,7 @@ Contains Python `dataclass`es representing various Kubernetes event structures.
 *   **Dependency Management:** `uv` is used for managing Python dependencies.
 *   **Testing Framework:** `pytest` is used for writing and running unit tests.
 *   **Test Execution:** Tests can be run using the command `uv run pytest`.
+*   **Helm Chart Testing:** Helm charts in `charts/sibyl/` are tested using `helm unittest`. Tests are defined in `charts/sibyl/tests/` and can be run with `helm unittest charts/sibyl`.
 *   **Code Coverage:** `pytest-cov` is configured to report code coverage. Use `uv run pytest --cov=src --cov-report=term-missing` to view coverage.
 *   **Mocking:** `pytest-mock` is used extensively for mocking external dependencies (e.g., Kubernetes API, Slack API, `requests`).
 

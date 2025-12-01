@@ -21,3 +21,10 @@ tests:
             apiGroups: [""]
             resources: ["pods/log"]
             verbs: ["get", "list"]
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: ["pods/status"]
+            verbs: ["get"]
+
